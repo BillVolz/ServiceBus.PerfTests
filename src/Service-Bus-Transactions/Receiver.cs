@@ -5,19 +5,21 @@ using Microsoft.Extensions.Azure;
 
 namespace ServiceBus.TestApp
 {
-    public class Consumer
+    /// <summary>
+    /// Class used to receive service bus messages.
+    /// </summary>
+    public class Receiver
     {
-        private ServiceBusClient _serviceBusClient;
+        private ServiceBusClient? _serviceBusClient;
         private readonly ILogger<ServiceBusProcessor> _logger;
         private ServiceBusSender? _sender;
-        private string? _queName;
         private const bool EnableTransactions = true;
         private readonly Random _random;
         private readonly Queue<TimeSpan> _commitTimes = new Queue<TimeSpan>();
         private readonly IAzureClientFactory<ServiceBusClient> _serviceBugClientFactory;
-        private long messageProcessedCount = 0;
+        private long _messageProcessedCount = 0;
 
-        public Consumer(ILogger<ServiceBusProcessor> logger, IAzureClientFactory<ServiceBusClient> serviceBugClientFactory)
+        public Receiver(ILogger<ServiceBusProcessor> logger, IAzureClientFactory<ServiceBusClient> serviceBugClientFactory)
         {
             _logger = logger;
             _serviceBugClientFactory = serviceBugClientFactory;
@@ -27,10 +29,9 @@ namespace ServiceBus.TestApp
 
         public async Task Start(string source, string destination, CancellationToken cancellationToken)
         {
+            //We need a new client for each queue.  Otherwise the same AMPQ connection is used and it doesn't work.
             _serviceBusClient = _serviceBugClientFactory.CreateClient(source);
-
-            _queName = source;
-
+            
             _sender = string.IsNullOrEmpty(destination) ? null :
                  _serviceBusClient.CreateSender(destination);
 
@@ -48,8 +49,8 @@ namespace ServiceBus.TestApp
                 //MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(10)
             };
 
-
-            var processor = _serviceBusClient.CreateProcessor(_queName, options);
+            //Create the processor and start it.
+            var processor = _serviceBusClient.CreateProcessor(source, options);
             processor.ProcessMessageAsync += Processor_ProcessMessageAsync;
             processor.ProcessErrorAsync += Processor_ProcessErrorAsync;
 
@@ -61,9 +62,6 @@ namespace ServiceBus.TestApp
             var body = arg.Message.Body.ToString();
 
             if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace(message: body);
-
-            //Wait a random amount of time to simulate work.
-            //await Task.Delay(_random.Next(5, 10), arg.CancellationToken);
 
             var stopWatch = Stopwatch.StartNew();
 
@@ -82,7 +80,6 @@ namespace ServiceBus.TestApp
                            : null)
                 {
                     await arg.CompleteMessageAsync(arg.Message, arg.CancellationToken);
-
                     await _sender.SendMessageAsync(serviceBusMessage, arg.CancellationToken);
                     ts?.Complete();
                 }
@@ -99,14 +96,22 @@ namespace ServiceBus.TestApp
                     _commitTimes.Dequeue();
             }
 
-            Interlocked.Increment(ref messageProcessedCount);
+            Interlocked.Increment(ref _messageProcessedCount);
         }
 
+        /// <summary>
+        /// Get the number of messages processed since the last call.
+        /// </summary>
+        /// <returns></returns>
         public long GetMessagesProcessed()
         {
-            return Interlocked.Exchange(ref messageProcessedCount, 0);
+            return Interlocked.Exchange(ref _messageProcessedCount, 0);
         }
 
+        /// <summary>
+        /// Gets the highest transfer time from last 200 messages.
+        /// </summary>
+        /// <returns></returns>
         public TimeSpan GetMaxMessageTime()
         {
             long maxTicks = 0;
@@ -122,6 +127,10 @@ namespace ServiceBus.TestApp
 
             return new TimeSpan(Convert.ToInt64(maxTicks));
         }
+        /// <summary>
+        /// Gets the average response time from message transfers.hyp
+        /// </summary>
+        /// <returns></returns>
         public TimeSpan GetAverageMessageTime()
         {
             double averageTicks = 0;

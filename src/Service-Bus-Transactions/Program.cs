@@ -25,7 +25,7 @@ namespace ServiceBus.TestApp
                         builder.AddServiceBusClient(hostContext.Configuration.GetConnectionString("ServiceBus"))
                             .ConfigureOptions(options => options.EnableCrossEntityTransactions = true);
                     });
-                    services.AddTransient<Consumer>();
+                    services.AddTransient<Receiver>();
                     services.AddHostedService<SendingWorker>();
                     services.AddSingleton(x => new ServiceBusAdministrationClient(hostContext.Configuration.GetConnectionString("ServiceBus")));
                 })

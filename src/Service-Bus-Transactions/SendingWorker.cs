@@ -38,7 +38,12 @@ namespace ServiceBus.TestApp
                 }
             }
         }
-
+        /// <summary>
+        /// Sends a batch of messages to the queue.
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="stoppingToken"></param>
+        /// <returns></returns>
         private async Task SendPayLoad(int count, CancellationToken stoppingToken)
         {
             for (int x = 0; x < count; x+=5)
@@ -56,8 +61,11 @@ namespace ServiceBus.TestApp
             }
         }
 
+        /// <summary>
+        /// Sample payload of junk.
+        /// </summary>
         private readonly string payLoad =
-            "public class ReceivingWorker : BackgroundService\r\n    {\r\n        private readonly ILogger<ReceivingWorker> _logger;\r\n        private readonly IServiceProvider _serviceProvider;\r\n        private readonly ServiceBusClient _serviceBusClient;\r\n\r\n        public ReceivingWorker(ILogger<ReceivingWorker> logger, IServiceProvider serviceCollection, ServiceBusClient serviceBusClient)\r\n        {\r\n            _logger = logger;\r\n            _serviceProvider = serviceCollection;\r\n            _serviceBusClient = serviceBusClient;\r\n        }\r\n\r\n        protected override async Task ExecuteAsync(CancellationToken stoppingToken)\r\n        {\r\n            //Create 3 consumer that send to the next.  Final consumer deletes message.\r\n            var c1 = _serviceProvider.GetRequiredService<Consumer>();\r\n            var c2 = _serviceProvider.GetRequiredService<Consumer>();\r\n            var c3 = _serviceProvider.GetRequiredService<Consumer>();\r\n\r\n            await c1.Start(\"1\", \"2\", stoppingToken);\r\n            await c2.Start(\"2\", \"3\", stoppingToken);\r\n            await c3.Start(\"3\", \"\", stoppingToken);\r\n\r\n            var initialLoadSender = _serviceBusClient.CreateSender(\"1\");\r\n\r\n            for(int x=0; x< 10000; x++)\r\n            {\r\n                var serviceBusMessage = new ServiceBusMessage(new BinaryData(body)))\r\n                initialLoadSender.SendMessageAsync()\r\n            }\r\n\r\n            while (!stoppingToken.IsCancellationRequested)\r\n            {\r\n                _logger.LogInformation(\"ReceivingWorker running at: {time}\", DateTimeOffset.Now);\r\n                \r\n\r\n                await Task.Delay(1000, stoppingToken);\r\n            }\r\n        }\r\n        private string payLoad = \"\"";
+            "public class ReceivingWorker : BackgroundService\r\n    {\r\n        private readonly ILogger<ReceivingWorker> _logger;\r\n        private readonly IServiceProvider _serviceProvider;\r\n        private readonly ServiceBusClient _serviceBusClient;\r\n\r\n        public ReceivingWorker(ILogger<ReceivingWorker> logger, IServiceProvider serviceCollection, ServiceBusClient serviceBusClient)\r\n        {\r\n            _logger = logger;\r\n            _serviceProvider = serviceCollection;\r\n            _serviceBusClient = serviceBusClient;\r\n        }\r\n\r\n        protected override async Task ExecuteAsync(CancellationToken stoppingToken)\r\n        {\r\n            //Create 3 consumer that send to the next.  Final consumer deletes message.\r\n            var c1 = _serviceProvider.GetRequiredService<Receiver>();\r\n            var c2 = _serviceProvider.GetRequiredService<Receiver>();\r\n            var c3 = _serviceProvider.GetRequiredService<Receiver>();\r\n\r\n            await c1.Start(\"1\", \"2\", stoppingToken);\r\n            await c2.Start(\"2\", \"3\", stoppingToken);\r\n            await c3.Start(\"3\", \"\", stoppingToken);\r\n\r\n            var initialLoadSender = _serviceBusClient.CreateSender(\"1\");\r\n\r\n            for(int x=0; x< 10000; x++)\r\n            {\r\n                var serviceBusMessage = new ServiceBusMessage(new BinaryData(body)))\r\n                initialLoadSender.SendMessageAsync()\r\n            }\r\n\r\n            while (!stoppingToken.IsCancellationRequested)\r\n            {\r\n                _logger.LogInformation(\"ReceivingWorker running at: {time}\", DateTimeOffset.Now);\r\n                \r\n\r\n                await Task.Delay(1000, stoppingToken);\r\n            }\r\n        }\r\n        private string payLoad = \"\"";
     }
 
 }
